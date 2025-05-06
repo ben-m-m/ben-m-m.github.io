@@ -4,11 +4,14 @@ import sqlite3
 import rsa
 import os
 
+"""# For local .env support (optional)
+from dotenv import load_dotenv
+load_dotenv()"""
+
 app = Flask(__name__)
 DB_PATH = "licenses.db"
-PRIVATE_KEY_PATH = "private.pem"
 
-# 🔧 Initialize the SQLite database
+# 🔧 Initialize SQLite DB
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute('''
@@ -20,10 +23,15 @@ def init_db():
             )
         ''')
 
-# 🔐 Load private RSA key
+# 🔐 Load private key (from environment or local file)
 def load_private_key():
-    with open(PRIVATE_KEY_PATH, "rb") as f:
-        return rsa.PrivateKey.load_pkcs1(f.read())
+    key_str = os.environ.get("PRIVATE_KEY")
+    if key_str:
+        return rsa.PrivateKey.load_pkcs1(key_str.encode())
+    else:
+        # fallback for local dev
+        with open("private.pem", "rb") as f:
+            return rsa.PrivateKey.load_pkcs1(f.read())
 
 # 📡 Activation API
 @app.route('/activate', methods=['POST'])
@@ -35,7 +43,7 @@ def activate():
     if not email or not machine_id:
         return jsonify({"status": "error", "message": "Missing email or machine ID"}), 400
 
-    # Store or check machine ID
+    # Check/store license
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM licenses WHERE machine_id = ?", (machine_id,))
