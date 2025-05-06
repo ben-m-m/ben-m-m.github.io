@@ -1,3 +1,4 @@
+# server.py
 from flask import Flask, request, jsonify
 import sqlite3
 import rsa
@@ -7,7 +8,7 @@ app = Flask(__name__)
 DB_PATH = "licenses.db"
 PRIVATE_KEY_PATH = "private.pem"
 
-# Ensure DB exists
+# 🔧 Initialize the SQLite database
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute('''
@@ -19,10 +20,12 @@ def init_db():
             )
         ''')
 
+# 🔐 Load private RSA key
 def load_private_key():
     with open(PRIVATE_KEY_PATH, "rb") as f:
         return rsa.PrivateKey.load_pkcs1(f.read())
 
+# 📡 Activation API
 @app.route('/activate', methods=['POST'])
 def activate():
     data = request.get_json()
@@ -32,12 +35,11 @@ def activate():
     if not email or not machine_id:
         return jsonify({"status": "error", "message": "Missing email or machine ID"}), 400
 
-    # Check if machine is already registered
+    # Store or check machine ID
     with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM licenses WHERE machine_id = ?", (machine_id,))
         row = cur.fetchone()
-
         if not row:
             cur.execute("INSERT INTO licenses (email, machine_id) VALUES (?, ?)", (email, machine_id))
             conn.commit()
@@ -52,4 +54,5 @@ def activate():
 
 if __name__ == '__main__':
     init_db()
+    print("🔐 SAMIS License Server running at http://localhost:5000")
     app.run(host='0.0.0.0', port=5000)
