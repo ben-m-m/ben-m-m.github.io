@@ -2,3 +2,4 @@
 flask
 rsa
 python-dotenv
+gunicorn
