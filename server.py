@@ -11,7 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 DB_PATH = "licenses.db"
 
-@app.route('/')
+@app.route('/', method=['GET', 'POST'])
 def home():
     return 'License server is running!'
 
