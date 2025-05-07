@@ -11,6 +11,10 @@ load_dotenv()
 app = Flask(__name__)
 DB_PATH = "licenses.db"
 
+@app.route('/')
+def home():
+    return 'License server is running!'
+
 # 🔧 Initialize SQLite DB
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
