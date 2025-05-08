@@ -11,7 +11,7 @@ load_dotenv()
 app = Flask(__name__)
 DB_PATH = "licenses.db"
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def home():
     return 'License server is running!'
 
@@ -66,4 +66,6 @@ def activate():
 
 if __name__ == '__main__':
     init_db()
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
