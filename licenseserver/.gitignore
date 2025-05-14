@@ -1,7 +1,65 @@
-# .gitignore
+# Python
 __pycache__/
+*.py[cod]
+*.pyo
+*.pyd
 *.pyc
+*.pyo
+.Python
+env/
+venv/
+ENV/
+.venv/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Flask / Config
+instance/
+config.py
+*.sqlite3
 *.db
-private.pem
-activation.key
+
+# PyCharm / VSCode IDE
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage / Testing
+.coverage
+htmlcov/
+.tox/
+.nox/
+.cache/
+
+# Virtualenv / Pipenv
+pip-wheel-metadata/
+pip-log.txt
+poetry.lock
+
+# Flask-Limiter In-Memory Warnings (if log files created)
+limiter.log
+
+# Static files cache
+*.bak
+*.swp
+*.swo
+
+# Compiled assets
+node_modules/
+*.map
+
+# Secrets / Keys
+*.pem
+*.key
+
+# Misc
 .env
+.env.*
