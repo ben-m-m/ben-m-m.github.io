@@ -1,7 +1,8 @@
 from flask import Flask, jsonify, request, redirect, url_for, render_template, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from models import db, School, Device, AuditLog
+from models import School, Device, AuditLog
+from extension import db
 from decorators import token_required, license_required
 from utils import device_status
 from config import SECRET_KEY
@@ -151,7 +152,7 @@ def index():
     return redirect(url_for('dashboard.dashboard'))
 
 # ---------------------- Run ----------------------
-
+"""
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -173,7 +174,7 @@ def login():
 def logout():
     logout_user()
     flash('Logged out.', 'info')
-    return redirect(url_for('login'))
+    return redirect(url_for('login'))"""
 
 if __name__ == '__main__':
     webbrowser.open_new('http://127.0.0.1:5000/dashboard')
