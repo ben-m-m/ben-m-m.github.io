@@ -1,87 +1,119 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
+from flask import Flask, jsonify, request, redirect, url_for, render_template
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 from models import db, School, Device, AuditLog
-from utils import device_status, sign_response
-from auth import token_required
+from decorators import token_required, license_required
+from utils import device_status
+from config import SECRET_KEY
 from dashboard import dashboard_bp
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from datetime import datetime, timedelta
-import config
+import webbrowser
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-app.config['SECRET_KEY'] = config.SECRET_KEY
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///licenses.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = SECRET_KEY
+
+# Initialize SQLAlchemy
 db.init_app(app)
 
-limiter = Limiter(get_remote_address, app=app, default_limits=["100 per hour"])
-
+# Register dashboard blueprint
 app.register_blueprint(dashboard_bp)
 
-@app.before_request
-def create_tables():
+# Ensure tables are created once at startup (Flask 3.x fix)
+with app.app_context():
     db.create_all()
 
-# Helper to log actions
-def log_action(device_id, action, details=''):
-    log = AuditLog(device_id=device_id, action=action, details=details)
-    db.session.add(log)
-    db.session.commit()
+# ---------------------- API Endpoints ----------------------
 
-# API Endpoints
-@app.route('/register_school', methods=['POST'])
+@app.route('/api/schools', methods=['GET'])
 @token_required
-def register_school():
-    data = request.json
-    if School.query.filter_by(school_id=data['school_id']).first():
-        return jsonify({'message': 'School already exists'}), 400
-    school = School(school_id=data['school_id'], name=data['name'])
-    db.session.add(school)
-    db.session.commit()
-    return jsonify({'message': 'School registered successfully'})
+def get_schools():
+    schools = School.query.all()
+    result = [{'school_id': s.school_id, 'name': s.name} for s in schools]
+    return jsonify(result), 200
 
-@app.route('/register_device', methods=['POST'])
+@app.route('/api/devices', methods=['GET'])
 @token_required
-def register_device():
-    data = request.json
-    school = School.query.filter_by(school_id=data['school_id']).first()
-    if not school:
-        return jsonify({'message': 'Invalid School ID'}), 404
-    device = Device(machine_id=data['machine_id'], school_id=data['school_id'],
-                    expiry_date=datetime.utcnow() + timedelta(days=data.get('validity_days', 30)))
-    db.session.add(device)
-    db.session.commit()
-    log_action(device.id, 'Device Registered', f'Validity: {device.expiry_date}')
-    return jsonify({'message': 'Device registered successfully'})
+def get_devices():
+    devices = Device.query.all()
+    result = []
+    for d in devices:
+        result.append({
+            'id': d.id,
+            'machine_id': d.machine_id,
+            'school_id': d.school_id,
+            'status': device_status(d),
+            'expiry_date': d.expiry_date.strftime('%Y-%m-%d'),
+            'last_checked': d.last_checked.strftime('%Y-%m-%d %H:%M:%S') if d.last_checked else None
+        })
+    return jsonify(result), 200
 
-@app.route('/check_status', methods=['POST'])
-@limiter.limit("10 per minute")
-@token_required
-def check_status():
-    data = request.json
-    device = Device.query.filter_by(machine_id=data['machine_id'], school_id=data['school_id']).first()
+@app.route('/api/device/check', methods=['POST'])
+@license_required
+def check_device():
+    payload = request.license_payload
+    machine_id = payload.get('machine_id')
+    school_id = payload.get('school_id')
+
+    device = Device.query.filter_by(machine_id=machine_id, school_id=school_id).first()
     if not device:
-        return jsonify({'status': 'Unregistered'}), 404
+        return jsonify({'error': 'Device not registered'}), 404
+
     device.last_checked = datetime.utcnow()
     db.session.commit()
-    log_action(device.id, 'Status Check', f'Status: {device_status(device)}')
-    response_data = {'status': device_status(device), 'expiry_date': device.expiry_date.strftime('%Y-%m-%d')}
-    response_data['signature'] = sign_response(response_data)
-    return jsonify(response_data)
 
-@app.route('/update_device', methods=['POST'])
-@token_required
-def update_device():
-    data = request.json
-    device = Device.query.filter_by(machine_id=data['machine_id'], school_id=data['school_id']).first()
-    if not device:
-        return jsonify({'message': 'Device not found'}), 404
-    if 'status' in data:
-        device.status = data['status']
-    if 'expiry_date' in data:
-        device.expiry_date = datetime.strptime(data['expiry_date'], '%Y-%m-%d')
-    db.session.commit()
-    log_action(device.id, 'Device Updated', f"Status: {device.status}, Expiry: {device.expiry_date}")
-    return jsonify({'message': 'Device updated successfully'})
+    return jsonify({
+        'machine_id': device.machine_id,
+        'status': device_status(device),
+        'expiry_date': device.expiry_date.strftime('%Y-%m-%d')
+    }), 200
+
+@app.route('/audit-logs')
+def audit_logs():
+    school_id = request.args.get('school_id')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    query = AuditLog.query
+    if school_id:
+        query = query.filter(AuditLog.school_id == school_id)
+    if start_date:
+        query = query.filter(AuditLog.timestamp >= start_date)
+    if end_date:
+        query = query.filter(AuditLog.timestamp <= end_date)
+
+    audit_logs = query.order_by(AuditLog.timestamp.desc()).all()
+    schools = School.query.all()
+
+    return render_template('audit_logs.html', audit_logs=audit_logs, schools=schools)
+
+@app.route('/devices')
+def devices():
+    search = request.args.get('search', '')
+    status = request.args.get('status', '')
+
+    query = Device.query
+    if search:
+        query = query.filter(
+            Device.machine_id.contains(search) | Device.school_id.contains(search)
+        )
+    if status:
+        if status == 'Expired':
+            query = query.filter(Device.expiry_date < datetime.utcnow())
+        else:
+            query = query.filter(Device.status == status)
+
+    devices = query.order_by(Device.id.desc()).all()
+    return render_template('devices.html', devices=devices)
+
+
+@app.route('/')
+def index():
+    # Redirect to dashboard home page
+    return redirect(url_for('dashboard.dashboard'))
+
+# ---------------------- Run ----------------------
 
 if __name__ == '__main__':
+    webbrowser.open_new('http://127.0.0.1:5000/dashboard')
     app.run(debug=True, port=5000)
