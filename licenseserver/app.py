@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, redirect, url_for, render_template
+from flask import Flask, jsonify, request, redirect, url_for, render_template, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from models import db, School, Device, AuditLog
@@ -7,6 +7,11 @@ from utils import device_status
 from config import SECRET_KEY
 from dashboard import dashboard_bp
 import webbrowser
+from models import Admin
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from auth import auth_bp
+
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///licenses.db'
@@ -16,12 +21,23 @@ app.secret_key = SECRET_KEY
 # Initialize SQLAlchemy
 db.init_app(app)
 
+# Flask-Login setup
+login_manager = LoginManager()
+login_manager.login_view = 'login'
+login_manager.init_app(app)
+
 # Register dashboard blueprint
 app.register_blueprint(dashboard_bp)
+
+app.register_blueprint(auth_bp)
 
 # Ensure tables are created once at startup (Flask 3.x fix)
 with app.app_context():
     db.create_all()
+
+@login_manager.user_loader
+def load_user(user_id):
+    return Admin.query.get(int(user_id))
 
 # ---------------------- API Endpoints ----------------------
 
@@ -106,6 +122,28 @@ def devices():
     devices = query.order_by(Device.id.desc()).all()
     return render_template('devices.html', devices=devices)
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        admin = Admin.query.filter_by(username=username).first()
+        if admin and admin.password == password:  # Ideally hash+check password
+            login_user(admin)
+            flash('Logged in successfully!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid credentials', 'danger')
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logged out.', 'info')
+    return redirect(url_for('login'))
 
 @app.route('/')
 def index():
@@ -113,6 +151,29 @@ def index():
     return redirect(url_for('dashboard.dashboard'))
 
 # ---------------------- Run ----------------------
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        admin = Admin.query.filter_by(username=username).first()
+        if admin and admin.password == password:  # Ideally hash+check password
+            login_user(admin)
+            flash('Logged in successfully!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid credentials', 'danger')
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logged out.', 'info')
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     webbrowser.open_new('http://127.0.0.1:5000/dashboard')

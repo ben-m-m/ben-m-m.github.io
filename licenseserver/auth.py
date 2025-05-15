@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from functools import wraps
-from flask import request, jsonify
+from flask import request, jsonify,Blueprint, render_template, redirect, url_for, flash
+from models import db, Admin
+from flask_login import login_required
 
 # Load secrets from .env
 load_dotenv()
@@ -53,3 +55,23 @@ def token_required(f):
             return jsonify({'message': 'Token is invalid!'}), 403
         return f(*args, **kwargs)
     return decorated
+
+auth_bp = Blueprint('auth', __name__)
+
+@auth_bp.route('/register_admin', methods=['GET', 'POST'])
+@login_required
+def register_admin():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        if Admin.query.filter_by(username=username).first():
+            flash('Username already exists!', 'danger')
+        else:
+            new_admin = Admin(username=username, password=password)
+            db.session.add(new_admin)
+            db.session.commit()
+            flash('Admin registered successfully!', 'success')
+            return redirect(url_for('dashboard.dashboard'))
+
+    return render_template('register_admin.html')
