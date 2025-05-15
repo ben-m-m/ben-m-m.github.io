@@ -1,65 +1,38 @@
-# Python
-__pycache__/
-*.py[cod]
+# Jupyter Notebook checkpoints (if you use Jupyter)
+.ipynb_checkpoints/
+
+# Byte-compiled / optimized / DLL files for other Python implementations
+*.pyd
 *.pyo
 *.pyd
-*.pyc
-*.pyo
-.Python
-env/
-venv/
-ENV/
-.venv/
-*.egg-info/
-dist/
-build/
-*.egg
 
-# Flask / Config
-instance/
-config.py
-*.sqlite3
-*.db
+# MyPy cache
+.mypy_cache/
+.dmypy.json
+.pyre/
 
-# PyCharm / VSCode IDE
-.idea/
-.vscode/
+# VSCode extensions/settings
+.vscode/*
 
-# OS files
-.DS_Store
-Thumbs.db
+# Pytest cache
+.pytest_cache/
 
-# Logs
-*.log
+# Coverage files
+.coverage.*
+.cache
 
-# Coverage / Testing
-.coverage
-htmlcov/
-.tox/
-.nox/
-.cache/
+# Flask migrations (if using Flask-Migrate)
+migrations/
 
-# Virtualenv / Pipenv
+# Mac-specific file (can be duplicated sometimes)
+.AppleDouble
+
+# Windows thumbnail cache files
+ehthumbs.db
+
+# Docker-related (if you use Docker)
+docker-compose.override.yml
+.docker/
+
+# Python packaging
 pip-wheel-metadata/
-pip-log.txt
-poetry.lock
-
-# Flask-Limiter In-Memory Warnings (if log files created)
-limiter.log
-
-# Static files cache
-*.bak
-*.swp
-*.swo
-
-# Compiled assets
-node_modules/
-*.map
-
-# Secrets / Keys
-*.pem
-*.key
-
-# Misc
-.env
-.env.*
