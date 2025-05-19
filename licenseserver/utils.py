@@ -1,7 +1,11 @@
+import os
 from datetime import datetime
 import hmac, hashlib, base64
-from config import SIGNING_SECRET
+from config import config
 
+env = os.getenv("FLASK_ENV", "default")
+SIGNING_SECRET = config[env].SIGNING_SECRET_RAW
+SECRET_KEY = config[env].SECRET_KEY
 def is_expired(expiry_date):
     return datetime.utcnow() > expiry_date
 

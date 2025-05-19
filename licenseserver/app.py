@@ -5,14 +5,18 @@ from models import School, Device, AuditLog
 from extension import db
 from decorators import token_required, license_required
 from utils import device_status
-from config import SECRET_KEY
 from dashboard import dashboard_bp
 import webbrowser
 from models import Admin
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from auth import auth_bp
+from config import config
+import os
 
 
+env = os.getenv("FLASK_ENV", "default")
+app_config = config[env]
+SECRET_KEY = config[env].SECRET_KEY
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///licenses.db'

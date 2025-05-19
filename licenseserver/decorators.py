@@ -1,11 +1,15 @@
+import os
 import jwt
 import hmac
 import hashlib
 import base64
 from flask import request, jsonify
 from functools import wraps
-from config import JWT_SECRET, SIGNING_SECRET
+from config import config
 
+env = os.getenv("FLASK_ENV", "default")
+JWT_SECRET_KEY = config[env].JWT_SECRET_KEY
+SIGNING_SECRET = config[env].SIGNING_SECRET
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -13,7 +17,7 @@ def token_required(f):
         if not token:
             return jsonify({'message': 'Token is missing!'}), 403
         try:
-            data = jwt.decode(token.split()[1], JWT_SECRET, algorithms=["HS256"])
+            data = jwt.decode(token.split()[1], JWT_SECRET_KEY, algorithms=["HS256"])
         except:
             return jsonify({'message': 'Token is invalid!'}), 403
         return f(*args, **kwargs)
@@ -31,7 +35,7 @@ def verify_signature(token: str, provided_signature: str) -> bool:
 
 def verify_license_token(token: str, signature: str) -> dict | None:
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
         if not verify_signature(token, signature):
             return None
         return payload
