@@ -1,14 +1,14 @@
 # licenseserver/create_admin.py
 
 from dotenv import load_dotenv
-from extension import db
-from models import Admin
+from .extension import db
+from .models import Admin
 import os
 
 load_dotenv()
 
 def ensure_admin():
-    from app import app
+    from .app import app
     with app.app_context():
         username = "admin"
         password = os.getenv("ADMIN_PASSWORD")
