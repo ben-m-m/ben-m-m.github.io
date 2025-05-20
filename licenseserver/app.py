@@ -11,6 +11,11 @@ from auth import auth_bp
 from config import config
 import os
 import webbrowser
+import create_admin
+
+
+create_admin.ensure_admin()
+
 
 # Load environment config
 env = os.getenv("FLASK_ENV", "default")
