@@ -8,7 +8,7 @@ import os
 load_dotenv()
 
 def ensure_admin():
-    from .app import app
+    from licenseserver.app import app
     with app.app_context():
         username = "admin"
         password = os.getenv("ADMIN_PASSWORD")
