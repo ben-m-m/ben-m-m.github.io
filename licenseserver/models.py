@@ -4,7 +4,29 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from extension import db
 
-db = SQLAlchemy()
+"""db = SQLAlchemy()"""
+
+class Admin(db.Model, UserMixin):
+    __tablename__ = 'admin'
+    __table_args__ = {'extend_existing': True}
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    _password = db.Column('password', db.String(200), nullable=False)
+
+    @property
+    def password(self):
+        raise AttributeError("Password is write-only")
+
+    @password.setter
+    def password(self, plaintext):
+        self._password = generate_password_hash(plaintext)
+
+    def check_password(self, plaintext):
+        return check_password_hash(self._password, plaintext)
+
+    def __repr__(self):
+        return f'<Admin {self.username}>'
 
 class School(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -25,22 +47,3 @@ class AuditLog(db.Model):
     action = db.Column(db.String(100))
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     details = db.Column(db.Text)
-
-class Admin(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
-
-    @property
-    def password(self):
-        raise AttributeError('Password is write-only.')
-
-    @password.setter
-    def password(self, plaintext_password):
-        self.password_hash = generate_password_hash(plaintext_password)
-
-    def check_password(self, plaintext_password):
-        return check_password_hash(self.password_hash, plaintext_password)
-
-    def __repr__(self):
-        return f'<Admin {self.username}>'
