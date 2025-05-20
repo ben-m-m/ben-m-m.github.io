@@ -1,8 +1,8 @@
 # licenseserver/create_admin.py
 
 from dotenv import load_dotenv
-from .extension import db
-from .models import Admin
+from licenseserver.extension import db
+from licenseserver.models import Admin
 import os
 
 load_dotenv()
