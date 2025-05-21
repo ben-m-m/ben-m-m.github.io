@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
-from licenseserver.models import db
+from licenseserver.models import db, School, Device, AuditLog
 from datetime import datetime
 from licenseserver.decorators import token_required  # Added import
 from flask_login import login_required
