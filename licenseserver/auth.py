@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from functools import wraps
 from flask import request, jsonify,Blueprint, render_template, redirect, url_for, flash
-from models import db, Admin
+from licenseserver.models import db, Admin
 from flask_login import login_required
 
 # Load secrets from .env

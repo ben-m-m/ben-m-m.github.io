@@ -1,6 +1,6 @@
 import os
 from app import app  
-from config import config  
+from licenseserver.config import config  
 
 def main():
     env = os.getenv("FLASK_ENV", "default")

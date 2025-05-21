@@ -1,14 +1,14 @@
 from flask import Flask, jsonify, request, redirect, url_for, render_template, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from licenseserver.models import School, Device, AuditLog, Admin
+from .models import School, Device, AuditLog, Admin
 from licenseserver.extension import db
 from licenseserver.decorators import token_required, license_required
-from licenseserver.utils import device_status
-from licenseserver.dashboard import dashboard_bp
+from .utils import device_status
+from .dashboard import dashboard_bp
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from licenseserver.auth import auth_bp
-from licenseserver.config import config
+from .auth import auth_bp
+from .config import config
 import os
 import webbrowser
 
@@ -139,7 +139,7 @@ def index():
 
 # ---------------------- Run ----------------------
 if __name__ == '__main__':
-    import create_admin
+    from licenseserver import create_admin
     create_admin.ensure_admin()
     webbrowser.open_new('http://127.0.0.1:5000/dashboard')
     app.run(debug=True, port=5000)

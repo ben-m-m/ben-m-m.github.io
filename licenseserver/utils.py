@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 import hmac, hashlib, base64
-from config import config
+from licenseserver.config import config
 
 env = os.getenv("FLASK_ENV", "default")
 SIGNING_SECRET = config[env].SIGNING_SECRET_RAW

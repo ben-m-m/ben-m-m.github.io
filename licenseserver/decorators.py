@@ -5,7 +5,7 @@ import hashlib
 import base64
 from flask import request, jsonify
 from functools import wraps
-from config import config
+from licenseserver.config import config
 
 env = os.getenv("FLASK_ENV", "default")
 JWT_SECRET_KEY = config[env].JWT_SECRET_KEY

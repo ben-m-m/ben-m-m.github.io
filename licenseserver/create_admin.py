@@ -2,7 +2,7 @@
 
 from dotenv import load_dotenv
 from licenseserver.extension import db
-from licenseserver.models import Admin
+from .models import Admin
 import os
 
 load_dotenv()
