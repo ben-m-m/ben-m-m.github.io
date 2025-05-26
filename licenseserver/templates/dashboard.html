@@ -131,32 +131,20 @@
     </main>
 </div>
 
-<!-- Add School Modal -->
-<div class="modal fade" id="addSchoolModal" tabindex="-1" aria-labelledby="addSchoolModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post" action="/register_school">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add School</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">School ID</label>
-                        <input type="text" name="school_id" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">School Name</label>
-                        <input type="text" name="name" class="form-control" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Add School</button>
-                </div>
-            </form>
-        </div>
+<!-- Add School Modal --><div class="modal-body">
+    <div class="mb-3">
+        <label class="form-label">School ID</label>
+        <input type="text" id="schoolIdInput" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">School Name</label>
+        <input type="text" id="schoolNameInput" class="form-control" required>
     </div>
 </div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-primary" onclick="addSchool()">Add School</button>
+</div>
+
 
 <!-- Toast Notifications -->
 {% with messages = get_flashed_messages() %}
@@ -177,6 +165,43 @@
         </div>
     {% endif %}
 {% endwith %}
+<script>
+  const adminToken = "{{ token }}";
+
+  function addSchool() {
+    const schoolId = document.getElementById("schoolIdInput").value.trim();
+    const schoolName = document.getElementById("schoolNameInput").value.trim();
+
+    if (!schoolId || !schoolName) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    fetch("/api/add-school", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + adminToken
+      },
+      body: JSON.stringify({
+        school_code: schoolId,
+        school_name: schoolName
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.message) {
+        alert(data.message);
+        window.location.reload();
+      } else {
+        alert("Unexpected response from server.");
+      }
+    })
+    .catch(err => {
+      alert("Error adding school: " + err);
+    });
+  }
+</script>
 
 </body>
 </html>
