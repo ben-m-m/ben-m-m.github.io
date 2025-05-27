@@ -1,26 +1,26 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from licenseserver.models import db, School, Device, AuditLog
 from datetime import datetime
-from licenseserver.decorators import token_required  # Added import
+from licenseserver.decorators import admin_login_required  # Use admin login for dashboard access
 from flask_login import login_required
-
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/dashboard')
-@login_required
+@admin_login_required
 def dashboard():
     schools = School.query.all()
     devices = Device.query.all()
     return render_template('dashboard.html', schools=schools, devices=devices)
 
 @dashboard_bp.route('/device/<int:device_id>/update', methods=['POST'])
-@token_required  # Added token_required decorator for security
+@admin_login_required
 def update_device(device_id):
     device = Device.query.get(device_id)
     if not device:
         flash('Device not found', 'danger')
         return redirect(url_for('dashboard.dashboard'))
+
     try:
         device.status = request.form['status']
         device.expiry_date = datetime.strptime(request.form['expiry_date'], '%Y-%m-%d')
@@ -29,10 +29,11 @@ def update_device(device_id):
     except Exception as e:
         db.session.rollback()
         flash(f'Error updating device: {str(e)}', 'danger')
+    
     return redirect(url_for('dashboard.dashboard'))
 
 @dashboard_bp.route('/register_school', methods=['POST'])
-@token_required
+@admin_login_required
 def register_school():
     school_id = request.form.get('school_id')
     name = request.form.get('name')

@@ -7,9 +7,9 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from functools import wraps
-from flask import request, jsonify,Blueprint, render_template, redirect, url_for, flash
-from licenseserver.models import db, Admin
+from flask import request, jsonify, Blueprint, render_template, redirect, url_for, flash
 from flask_login import login_required
+from licenseserver.models import db, Admin
 
 # Load secrets from .env
 load_dotenv()
@@ -33,28 +33,61 @@ def generate_license_token(school_id: str, machine_id: str, validity_days: int =
         'machine_id': machine_id,
         'exp': datetime.utcnow() + timedelta(days=validity_days),
         'iat': datetime.utcnow(),
+        'admin_id': 1  # Optional: used for traceability
     }
-
     token = jwt.encode(payload, JWT_SECRET, algorithm='HS256')
-    license_signature = sign_license_data(token)
-    return {
-        'token': token,
-        'signature': license_signature
-    }
+    signature = sign_license_data(token)
+    return {'token': token, 'signature': signature}
 
+# -------------------- Token Decorators -------------------- #
 
-def token_required(f):
+# Decorator for routes requiring token with admin privileges
+def admin_token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.headers.get('Authorization')
-        if not token:
-            return jsonify({'message': 'Token is missing!'}), 403
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'message': 'Authorization header missing or malformed'}), 401
+
+        token = auth_header.split(' ')[1]
         try:
-            jwt.decode(token.split()[1], JWT_SECRET, algorithms=["HS256"])
-        except Exception:
-            return jsonify({'message': 'Token is invalid!'}), 403
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            if not payload.get('admin_id'):
+                return jsonify({'message': 'Token missing admin_id'}), 403
+            admin = Admin.query.get(payload['admin_id'])
+            if not admin:
+                return jsonify({'message': 'Admin not found'}), 404
+        except ExpiredSignatureError:
+            return jsonify({'message': 'Token expired'}), 401
+        except InvalidTokenError:
+            return jsonify({'message': 'Invalid token'}), 401
+
         return f(*args, **kwargs)
     return decorated
+
+# Decorator for license check token (school_id + machine_id)
+def license_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'message': 'Authorization header missing or malformed'}), 401
+
+        token = auth_header.split(' ')[1]
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            if not payload.get('school_id') or not payload.get('machine_id'):
+                return jsonify({'message': 'Token missing device identifiers'}), 403
+        except ExpiredSignatureError:
+            return jsonify({'message': 'Token expired'}), 401
+        except InvalidTokenError:
+            return jsonify({'message': 'Invalid token'}), 401
+
+        request.license_payload = payload
+        return f(*args, **kwargs)
+    return decorated
+
+# -------------------- Auth Blueprint -------------------- #
 
 auth_bp = Blueprint('auth', __name__)
 
