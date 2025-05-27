@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, redirect, url_for, render_template, flash
+from flask import Flask, jsonify, request, redirect, url_for, render_template, flash, session, g
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from .models import School, Device, AuditLog, Admin
@@ -11,8 +11,7 @@ from .auth import auth_bp
 from .config import config
 import os
 import webbrowser
-
-
+from decorators import token_required, admin_login_required, license_required
 
 # Load environment config
 env = os.getenv("FLASK_ENV", "default")
@@ -62,6 +61,15 @@ def login():
             flash('Invalid credentials', 'danger')
 
     return render_template('login.html')
+
+@app.route("/dashboard")
+@admin_login_required
+def dashboard():
+    token = session.get("token")
+    schools = School.query.all()
+    devices = Device.query.all()
+    return render_template("dashboard.html", token=token, schools=schools, devices=devices)
+
 
 @app.route('/logout')
 @login_required
