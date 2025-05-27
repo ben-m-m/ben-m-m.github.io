@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from .models import School, Device, AuditLog, Admin
 from licenseserver.extension import db
-from licenseserver.decorators import token_required, license_required
+from licenseserver.decorators import token_required, license_required, admin_login_required
 from .utils import device_status
 from .dashboard import dashboard_bp
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
@@ -11,7 +11,6 @@ from .auth import auth_bp
 from .config import config
 import os
 import webbrowser
-from decorators import token_required, admin_login_required, license_required
 
 # Load environment config
 env = os.getenv("FLASK_ENV", "default")
